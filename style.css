@@ -1,0 +1,125 @@
+:root {
+  --bg: #d9150f;          /* updated by engrave.js as the scenes change */
+  --paper: #f6f1e7;
+  --ink: #121010;
+  --spot: #f9d72e;
+  --serif: "Fraunces", Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: auto; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--paper);
+  font: 400 1.05rem/1.6 var(--serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  z-index: 0;
+}
+.no-webgl #stage { display: none; }
+
+.bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem clamp(1rem, 3vw, 2.25rem);
+  pointer-events: none;
+}
+.mark { font: 600 .82rem var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.mark i { font-style: normal; opacity: .6; }
+.pill {
+  pointer-events: auto;
+  font: 600 .75rem var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  padding: .55rem .95rem;
+  text-decoration: none;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform .15s, box-shadow .15s;
+}
+.pill:hover, .pill:focus-visible { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ink); outline: none; }
+
+main { position: relative; z-index: 2; }
+.scene {
+  min-height: 125vh;
+  display: flex;
+  align-items: center;
+  padding: 0 clamp(1.25rem, 6vw, 6rem);
+}
+.copy { max-width: 32rem; }
+.copy.wide { max-width: 68rem; }
+
+.kicker { font: 600 .78rem var(--mono); letter-spacing: .14em; text-transform: uppercase; opacity: .8; margin: 0 0 1rem; }
+h1, h2 { font-weight: 900; line-height: .95; letter-spacing: -.02em; margin: 0 0 1.25rem; font-variation-settings: "opsz" 144; }
+h1 { font-size: clamp(3.2rem, 8.5vw, 8.5rem); }
+h2 { font-size: clamp(2.3rem, 5vw, 4.6rem); }
+.lede { font-size: 1.25rem; max-width: 26rem; }
+code { font: .9em var(--mono); background: rgba(0,0,0,.18); padding: .05em .35em; border-radius: 3px; }
+.hint { font: 600 .72rem var(--mono); letter-spacing: .2em; text-transform: uppercase; margin-top: 3rem; opacity: .75; }
+.hint::after { content: ""; display: block; width: 1px; height: 3.5rem; background: currentColor; margin-top: .75rem; animation: drip 1.8s ease-in-out infinite; transform-origin: top; }
+@keyframes drip { 0% { transform: scaleY(0); } 60% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+
+/* Text arrives as its scene does. */
+.copy > * { opacity: 0; transform: translateY(24px); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1); }
+.scene.in .copy > * { opacity: 1; transform: none; }
+.scene.in .copy > *:nth-child(2) { transition-delay: .08s; }
+.scene.in .copy > *:nth-child(3) { transition-delay: .16s; }
+.scene.in .copy > *:nth-child(4) { transition-delay: .24s; }
+
+.results { align-items: flex-end; padding-bottom: 12vh; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1.25rem; margin: 2rem 0; }
+.stats article {
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  box-shadow: 6px 6px 0 rgba(0,0,0,.55);
+  padding: 1.25rem 1.35rem 1.4rem;
+}
+.stats p { margin: 0; font-size: .98rem; }
+.num { font: 900 3.1rem/1 var(--serif) !important; letter-spacing: -.03em; margin-bottom: .8rem !important; }
+.num small { font-size: .5em; }
+.num span { font-size: .45em; font-weight: 400; vertical-align: middle; opacity: .6; }
+.foot { font: .8rem var(--mono); opacity: .85; }
+.foot a { color: inherit; }
+
+/* The cursor dot: the "bubble" from the scene, following you. */
+.cursor {
+  position: fixed; z-index: 4; left: 0; top: 0;
+  width: 22px; height: 22px; margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  pointer-events: none;
+  opacity: 0;
+  transition: width .2s, height .2s, margin .2s, opacity .3s;
+}
+.cursor.on { opacity: 1; }
+.cursor.big { width: 54px; height: 54px; margin: -27px 0 0 -27px; background: var(--spot); }
+
+@media (max-width: 760px) {
+  .scene { align-items: flex-end; padding-bottom: 14vh; }
+  .copy { background: color-mix(in srgb, var(--bg) 82%, transparent); padding: 1.25rem; margin: 0 -.25rem; }
+  .copy.wide { background: none; padding: 0; }
+  .lede { font-size: 1.1rem; }
+  .cursor { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .copy > * { transition: none; opacity: 1; transform: none; }
+  .hint::after { animation: none; }
+}

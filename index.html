@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Honeypot — a senior project in cybersecurity</title>
+<meta name="description" content="We set a trap for hackers: a honeypot, a website security scanner, and a study of Upstate SC small businesses.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="stage" aria-hidden="true"></canvas>
+<div class="cursor" aria-hidden="true"></div>
+
+<header class="bar">
+  <span class="mark">ETC <i>/</i> honeypot</span>
+  <a class="pill" href="#results">Results <span aria-hidden="true">↓</span></a>
+</header>
+
+<main>
+  <section class="scene" data-scene="0">
+    <div class="copy">
+      <p class="kicker">Senior project · Cybersecurity · 2026</p>
+      <h1>We set a trap<br>for hackers.</h1>
+      <p class="lede">A honeypot, a website scanner, and a study of the small businesses of Upstate South Carolina.</p>
+      <p class="hint" aria-hidden="true">Scroll</p>
+    </div>
+  </section>
+
+  <section class="scene" data-scene="1">
+    <div class="copy">
+      <p class="kicker">01 — The bait</p>
+      <h2>Something sweet, left out in the open.</h2>
+      <p>A honeypot is a server built to be attacked. It pretends to be a real machine — an SSH login, a Telnet prompt, a WordPress admin page — and quietly writes down everything that touches it.</p>
+    </div>
+  </section>
+
+  <section class="scene" data-scene="2">
+    <div class="copy">
+      <p class="kicker">02 — The swarm</p>
+      <h2>The bots don't take long.</h2>
+      <p>Our hypothesis: the first password guess lands within an hour of going online, and the first request for a leaked <code>/.env</code> file within a day. The honeypot goes live next — its real numbers will replace this sentence.</p>
+    </div>
+  </section>
+
+  <section class="scene" data-scene="3">
+    <div class="copy">
+      <p class="kicker">03 — The lock</p>
+      <h2>Then we check the doors they try.</h2>
+      <p>Every path the bots probe for — <code>/.env</code>, <code>/.git</code>, forgotten backups — becomes a check in our scanner. It grades a business website in plain English, using only public information unless the owner signs off in writing.</p>
+    </div>
+  </section>
+
+  <section class="scene results" id="results" data-scene="4">
+    <div class="copy wide">
+      <p class="kicker">04 — So far</p>
+      <h2>It works. We tested it.</h2>
+      <div class="stats">
+        <article>
+          <p class="num">100<small>%</small> <span>vs</span> 30<small>%</small></p>
+          <p>Precision on exposed-file checks: reading the file's contents, versus trusting the status code like simple scanners do. Seven lab sites, 25 planted flaws.</p>
+        </article>
+        <article>
+          <p class="num">F <span>→</span> D</p>
+          <p>Our own website, 35 to 60 out of 100, after one deploy of security headers. Two DNS records away from an A.</p>
+        </article>
+        <article>
+          <p class="num">8</p>
+          <p>Experiments on the tracker. The honeypot and the regional study are next, and nothing here is filled in before the data is.</p>
+        </article>
+      </div>
+      <p class="foot"><a href="../tracker.html">Open the experiment tracker</a> · Built by CJ Rickert · ETC Business Systems</p>
+    </div>
+  </section>
+</main>
+
+<script src="engrave.js"></script>
+</body>
+</html>
