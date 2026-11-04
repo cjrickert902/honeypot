@@ -16,7 +16,8 @@
 
   const params = new URLSearchParams(location.search);
   const FIXED = params.has("p") ? Math.min(1, Math.max(0, parseFloat(params.get("p")) || 0)) : null;
-  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const DEBUG = params.has("debug");
+  const reduceMotion =matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const glCanvas = document.getElementById("stage");
   const gl = glCanvas.getContext("webgl", { antialias: false, alpha: false, preserveDrawingBuffer: true });
@@ -70,15 +71,15 @@ void main(){
     if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
     return s;
   }
-  const prog = gl.createProgram();
-  gl.attachShader(prog, shader(gl.VERTEX_SHADER, VERT));
-  gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FRAG));
-  gl.linkProgram(prog);
-  gl.useProgram(prog);
+  const program = gl.createProgram();
+  gl.attachShader(program, shader(gl.VERTEX_SHADER, VERT));
+  gl.attachShader(program, shader(gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(program);
+  gl.useProgram(program);
   const buf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buf);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-  const aLoc = gl.getAttribLocation(prog, "a");
+  const aLoc = gl.getAttribLocation(program, "a");
   gl.enableVertexAttribArray(aLoc);
   gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0);
   const tex = gl.createTexture();
@@ -88,7 +89,7 @@ void main(){
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  const U = name => gl.getUniformLocation(prog, name);
+  const U = name => gl.getUniformLocation(program, name);
   const uRes = U("u_res"), uBg = U("u_bg"), uPeriod = U("u_period"), uTime = U("u_time");
 
   // ---------- sizing ----------
@@ -171,10 +172,10 @@ void main(){
     ctx.fill(); outline(2.5, 90);
     ctx.fillStyle = enc(0, 0, MAT.paper);
     ctx.textAlign = "center";
-    ctx.font = `900 ${Math.round(lw * .16)}px Fraunces, Georgia, serif`;
-    ctx.fillText("HONEYPOT", x, ly + lh * .52);
+    ctx.font = `900 ${Math.round(lw * .135)}px Fraunces, Georgia, serif`;
+    ctx.fillText("HONEYPOT", x, ly + lh * .52, lw * .88);
     ctx.font = `600 ${Math.round(lw * .062)}px "JetBrains Mono", monospace`;
-    ctx.fillText("SSH · TELNET · HTTP", x, ly + lh * .8);
+    ctx.fillText("SSH · TELNET · HTTP", x, ly + lh * .8, lw * .88);
     // body outline
     rrect(l, top + h * .1, w, h * .9, w * .2); outline(3.5, 90);
     // neck + lid
@@ -182,10 +183,19 @@ void main(){
     rrect(x - nw / 2, top + h * .02, nw, h * .1, 8);
     ctx.fillStyle = lin(x - nw / 2, 0, x + nw / 2, 0, [[0, .5], [.4, .95], [1, .45]], 90, MAT.paper);
     ctx.fill(); outline(3, 90);
-    const lidW = w * .9;
-    rrect(x - lidW / 2, top - h * .1, lidW, h * .13, 10);
-    ctx.fillStyle = lin(x - lidW / 2, 0, x + lidW / 2, 0, CYL.map(([o, v]) => [o, v * .8]), 90, MAT.paper);
+    ctx.beginPath();
+    ctx.ellipse(x, top + h * .025, nw / 2, h * .035, 0, 0, Math.PI * 2);
+    ctx.fillStyle = lin(0, top, 0, top + h * .06, [[0, .05], [1, .3]], 0, MAT.paper);
+    ctx.fill(); outline(3, 0);
+    // the lid is off, leaning against the jar
+    ctx.save();
+    ctx.translate(x + w * .95, base - h * .07);
+    ctx.rotate(.08);
+    const lidW = w * .9, lidH = h * .13;
+    rrect(-lidW / 2, -lidH / 2, lidW, lidH, 10);
+    ctx.fillStyle = lin(-lidW / 2, 0, lidW / 2, 0, CYL.map(([o, v]) => [o, v * .8]), 90, MAT.paper);
     ctx.fill(); outline(3.5, 90);
+    ctx.restore();
   }
 
   function dipper(hx, hy, rot, t) {
@@ -194,7 +204,7 @@ void main(){
     ctx.rotate(rot);
     const deg = rot * 180 / Math.PI;
     // handle runs up and to the left of the head
-    rrect(-640, -15, 600, 30, 15);
+    rrect(-480, -15, 440, 30, 15);
     ctx.fillStyle = lin(0, -15, 0, 15, [[0, .35], [.3, .95], [.7, .8], [1, .3]], deg, MAT.paper);
     ctx.fill(); outline(3, deg);
     // collar
@@ -297,9 +307,9 @@ void main(){
     rrect(-150, -45, 300, 240, 16);
     ctx.lineWidth = 2; ctx.strokeStyle = enc(.15, 0, MAT.paper); ctx.stroke();
     // keyhole
-    ctx.beginPath(); ctx.arc(0, 50, 30, 0, Math.PI * 2);
-    ctx.moveTo(-16, 64); ctx.lineTo(-24, 140); ctx.lineTo(24, 140); ctx.lineTo(16, 64); ctx.closePath();
-    ctx.fillStyle = enc(0, 0, MAT.paper); ctx.fill();
+    ctx.fillStyle = enc(0, 0, MAT.paper);
+    ctx.beginPath(); ctx.arc(0, 50, 30, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-16, 60); ctx.lineTo(-24, 140); ctx.lineTo(24, 140); ctx.lineTo(16, 60); ctx.closePath(); ctx.fill();
     for (const [rx, ry] of [[-130, -25], [130, -25], [-130, 175], [130, 175]]) dot(rx, ry, 9);
     ctx.restore();
   }
@@ -308,10 +318,11 @@ void main(){
     // string to the lock
     ctx.beginPath(); ctx.moveTo(x, y);
     ctx.quadraticCurveTo((x + toX) / 2, Math.max(y, toY) + 60, toX, toY);
-    ctx.lineWidth = 2.5; ctx.strokeStyle = enc(0, 0, MAT.paper); ctx.stroke();
+    ctx.lineWidth = 3; ctx.strokeStyle = enc(1, 0, MAT.white); ctx.stroke();
     ctx.save();
     ctx.translate(x, y); ctx.rotate(rot);
-    const w = 20 + text.length * 19, h = 62;
+    ctx.font = `600 30px "JetBrains Mono", monospace`;
+    const w = 56 + ctx.measureText(text).width, h = 62;
     ctx.beginPath();
     ctx.moveTo(0, 0); ctx.lineTo(26, -h / 2); ctx.lineTo(w, -h / 2); ctx.lineTo(w, h / 2); ctx.lineTo(26, h / 2); ctx.closePath();
     ctx.fillStyle = lin(0, -h / 2, 0, h / 2, [[0, 1], [1, .78]], 25, MAT.paper);
@@ -404,15 +415,15 @@ void main(){
     // --- act 1 & 2: the honeypot ---
     const shift = -pan * 1500;
     if (pan < 1) {
-      ctx.save(); ctx.translate(shift, 0);
+      ctx.save(); ctx.translate(0, shift);
       for (const b of BUBBLES) {
         const yy = ((b.y - time * 30 * b.s - p * 400) % 1000 + 1000) % 1000 - 500;
         dot(b.x + Math.sin(time * b.s + b.ph) * 14, yy, b.r * (.6 + .4 * descend));
       }
       const jarX = 40, jarBase = 380, jarW = 300, jarH = 380;
       const fill = lerp(.18, .78, ease(pour));
-      const hx = lerp(150, 90, descend), hy = lerp(-900, -330, descend) + Math.sin(time * .9) * 6;
-      const rot = lerp(-.9, -.32, descend);
+      const hx = lerp(260, 120, descend), hy = lerp(-950, -360, descend) + Math.sin(time * .9) * 6;
+      const rot = lerp(1.15, .62, descend);
       // drip leaves from the lowest point of the head
       const tipX = hx + Math.cos(rot) * 55 - Math.sin(rot) * 72, tipY = hy + Math.sin(rot) * 55 + Math.cos(rot) * 72;
       const honeyTop = jarBase - 9 - (jarH * .9 - 18) * fill;
@@ -425,10 +436,10 @@ void main(){
         const k = span(p, b.arrive - .08, b.arrive);
         if (k <= 0) continue;
         const ang = b.phase + time * b.speed;
-        let ox = jarX + Math.cos(ang) * b.orbit, oy = 120 + Math.sin(ang) * b.orbit * .55 + Math.sin(time * 3 + b.phase) * 10;
+        let ox = jarX + Math.cos(ang) * b.orbit * 1.1, oy = -60 + Math.sin(ang) * b.orbit * .5 + Math.sin(time * 3 + b.phase) * 10;
         let x = lerp(b.sx, ox, easeOut(k)), y = lerp(b.sy, oy, easeOut(k));
         // they scatter from the cursor
-        const dx = x + shift - px, dy = y - py, d = Math.hypot(dx, dy);
+        const dx = x - px, dy = y + shift - py, d = Math.hypot(dx, dy);
         if (d < 190) { x += dx / d * (190 - d) * .9; y += dy / d * (190 - d) * .9; }
         const heading = k < 1 ? Math.atan2(oy - b.sy, ox - b.sx) : ang + Math.PI / 2;
         bee(x, y, heading + b.tilt, Math.abs(Math.sin(time * 38 + b.phase)));
@@ -438,7 +449,12 @@ void main(){
 
     // --- act 3 & 4: the lock ---
     if (pan > 0) {
-      const lx = 1500 + shift + (portrait ? 0 : -40), ly = 60;
+      // for the results, the lock shrinks and lifts out of the way of the cards
+      const tuck = ease(span(p, .84, .96));
+      ctx.save();
+      ctx.translate(lerp(portrait ? 0 : -40, portrait ? 0 : 260, tuck), lerp(60, portrait ? -1100 : -300, tuck) + 1500 + shift);
+      ctx.scale(lerp(1, .5, tuck), lerp(1, .5, tuck));
+      const lx = 0, ly = 0;
       const lift = 95 * (1 - backOut(close));
       const settle = close > 0 && close < 1 ? Math.sin(close * 30) * .03 * (1 - close) : 0;
       for (const [text, ox, oy, r] of TAGS) {
@@ -450,6 +466,7 @@ void main(){
         const a = i / 6 * Math.PI * 2 + time * .15;
         dot(lx + Math.cos(a) * 470, ly + Math.sin(a) * 380, 6 + (i % 3) * 5);
       }
+      ctx.restore();
     }
 
     // --- engrave it ---
@@ -459,6 +476,17 @@ void main(){
     gl.uniform1f(uPeriod, Math.max(3.2, 4.4 * S) * dpr);
     gl.uniform1f(uTime, time);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    if (DEBUG && !frame.logged) {
+      frame.logged = true;
+      const d = ctx.getImageData(0, 0, scene.width, scene.height).data;
+      let objects = 0;
+      for (let i = 2; i < d.length; i += 4 * 97) if (d[i] > 40) objects++;
+      const out = new Uint8Array(glCanvas.width * glCanvas.height * 4);
+      gl.readPixels(0, 0, glCanvas.width, glCanvas.height, gl.RGBA, gl.UNSIGNED_BYTE, out);
+      let drawn = 0;
+      for (let i = 0; i < out.length; i += 4 * 97) if (out[i + 1] > 120) drawn++;   // paper/ink/spot have green; red bg does not
+      console.log(`debug p=${p.toFixed(3)} stage ${W}x${H} S=${S.toFixed(3)} scene-object-px=${objects} shader-object-px=${drawn} glError=${gl.getError()}`);
+    }
 
     // cursor dot trails the pointer
     cx += (mx - cx) * .2; cy += (my - cy) * .2;

@@ -34,8 +34,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.1rem clamp(1rem, 3vw, 2.25rem);
+  padding: 1.1rem clamp(1rem, 3vw, 2.25rem) 2.2rem;
   pointer-events: none;
+  background: linear-gradient(var(--bg) 45%, transparent);
 }
 .mark { font: 600 .82rem var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .mark i { font-style: normal; opacity: .6; }
@@ -63,6 +64,7 @@ main { position: relative; z-index: 2; }
 }
 .copy { max-width: 32rem; }
 .copy.wide { max-width: 68rem; }
+.scene[data-scene="0"] .copy { max-width: 46rem; }
 
 .kicker { font: 600 .78rem var(--mono); letter-spacing: .14em; text-transform: uppercase; opacity: .8; margin: 0 0 1rem; }
 h1, h2 { font-weight: 900; line-height: .95; letter-spacing: -.02em; margin: 0 0 1.25rem; font-variation-settings: "opsz" 144; }
