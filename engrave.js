@@ -27,9 +27,10 @@
   const ctx = scene.getContext("2d", { alpha: false });
 
   // ---------- colours ----------
-  const RED = [0.851, 0.082, 0.059];
-  const NIGHT = [0.075, 0.07, 0.07];
-  const MAT = { paper: 85, spot: 170, white: 255 };
+  // Each section names its background and accent ink (data-bg / data-accent);
+  // the stage blends between them as you scroll.
+  const MAT = { paper: 85, spot: 170, accent: 212, white: 255 };
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
 
   // ---------- shader ----------
   const VERT = `attribute vec2 a;varying vec2 v;void main(){v=a*.5+.5;gl_Position=vec4(a,0.,1.);}`;
@@ -39,6 +40,7 @@ varying vec2 v;
 uniform sampler2D u_scene;
 uniform vec2 u_res;
 uniform vec3 u_bg;
+uniform vec3 u_accent;
 uniform float u_period;
 uniform float u_time;
 const vec3 PAPER = vec3(0.965, 0.945, 0.905);
@@ -50,8 +52,8 @@ void main(){
   vec2 p = vec2(gl_FragCoord.x, u_res.y - gl_FragCoord.y);
   float grain = (hash(floor(p) + floor(u_time * 12.0)) - 0.5) * 0.04;
   if (c.b < 0.17) { gl_FragColor = vec4(u_bg + grain, 1.0); return; }
-  if (c.b > 0.83) { gl_FragColor = vec4(PAPER + grain * 0.5, 1.0); return; }
-  vec3 base = c.b < 0.5 ? PAPER : SPOT;
+  if (c.b > 0.92) { gl_FragColor = vec4(PAPER + grain * 0.5, 1.0); return; }
+  vec3 base = c.b < 0.5 ? PAPER : c.b < 0.75 ? SPOT : u_accent;
   float ang = c.g * 3.14159265;
   vec2 dir = vec2(cos(ang), sin(ang));
   vec2 nrm = vec2(-dir.y, dir.x);
@@ -90,7 +92,7 @@ void main(){
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   const U = name => gl.getUniformLocation(program, name);
-  const uRes = U("u_res"), uBg = U("u_bg"), uPeriod = U("u_period"), uTime = U("u_time");
+  const uRes = U("u_res"), uBg = U("u_bg"), uAccent = U("u_accent"), uPeriod = U("u_period"), uTime = U("u_time");
 
   // ---------- sizing ----------
   let W = 0, H = 0, dpr = 1, S = 1, CX = 0, CY = 0, portrait = false;
@@ -284,9 +286,85 @@ void main(){
     ctx.restore();
   }
 
-  function dot(x, y, r) {
+  function dot(x, y, r, mat = MAT.white) {
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = enc(1, 0, MAT.white); ctx.fill(); outline(Math.max(2, r * .14), 0);
+    ctx.fillStyle = mat === MAT.white ? enc(1, 0, mat) : rad(x - r * .35, y - r * .35, 0, r * 1.1, [[0, 1], [1, .45]], 45, mat);
+    ctx.fill(); outline(Math.max(2, r * .14), 0);
+  }
+
+  // the honeypot itself: a little server, its lights answering every command
+  function server(x, y, t, pulse) {
+    ctx.save(); ctx.translate(x, y);
+    // cable up and out of frame
+    ctx.beginPath(); ctx.moveTo(60, -250); ctx.bezierCurveTo(60, -360, 200, -330, 230, -480);
+    ctx.lineWidth = 16; ctx.strokeStyle = enc(0, 0, MAT.paper); ctx.stroke();
+    ctx.lineWidth = 9; ctx.strokeStyle = enc(.55, 90, MAT.accent); ctx.stroke();
+    // cabinet
+    rrect(-170, -260, 340, 540, 22);
+    ctx.fillStyle = lin(-170, 0, 170, 0, [[0, .35], [.15, .92], [.6, .8], [1, .3]], 90, MAT.paper);
+    ctx.fill(); outline(4, 90);
+    for (let u = 0; u < 4; u++) {
+      const uy = -225 + u * 118;
+      rrect(-140, uy, 280, 98, 8);
+      ctx.fillStyle = lin(0, uy, 0, uy + 98, [[0, .9], [1, .45]], 0, MAT.paper);
+      ctx.fill(); outline(2.5, 0);
+      // vents
+      for (let v = 0; v < 7; v++) {
+        rrect(-120 + v * 22, uy + 22, 10, 54, 5);
+        ctx.fillStyle = enc(.06, 90, MAT.paper); ctx.fill();
+      }
+      // status lights
+      for (let l = 0; l < 3; l++) {
+        const on = pulse > 0 ? Math.sin(pulse * 40 + u * 3 + l) > -.2 : Math.sin(t * (2 + u * .7 + l * 1.3) + u * 5 + l) > .3;
+        ctx.beginPath(); ctx.arc(60 + l * 26, uy + 49, 9, 0, Math.PI * 2);
+        ctx.fillStyle = on ? enc(1, 0, l === 0 ? MAT.spot : MAT.accent) : enc(.15, 0, MAT.paper);
+        ctx.fill(); outline(2, 0);
+      }
+    }
+    // feet
+    for (const fx of [-130, 100]) { rrect(fx, 278, 30, 22, 4); ctx.fillStyle = enc(.1, 0, MAT.paper); ctx.fill(); }
+    ctx.restore();
+  }
+
+  // a brass key that spins when the lock snaps shut
+  function key(x, y, rot, s = 1) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s);
+    const deg = rot * 180 / Math.PI;
+    // bow: a ring
+    ctx.beginPath(); ctx.arc(-120, 0, 62, 0, Math.PI * 2); ctx.arc(-120, 0, 30, 0, Math.PI * 2, true);
+    ctx.fillStyle = rad(-140, -20, 5, 70, [[0, 1], [.6, .7], [1, .3]], deg + 45, MAT.spot);
+    ctx.fill("evenodd"); outline(3.5, deg);
+    // shaft
+    rrect(-62, -14, 210, 28, 8);
+    ctx.fillStyle = lin(0, -14, 0, 14, [[0, .35], [.35, .98], [1, .3]], deg, MAT.spot);
+    ctx.fill(); outline(3, deg);
+    // bits
+    ctx.beginPath();
+    ctx.moveTo(100, 12); ctx.lineTo(100, 56); ctx.lineTo(118, 56); ctx.lineTo(118, 38); ctx.lineTo(132, 38); ctx.lineTo(132, 62); ctx.lineTo(148, 62); ctx.lineTo(148, 12); ctx.closePath();
+    ctx.fillStyle = lin(100, 0, 148, 0, [[0, .4], [.5, .9], [1, .35]], deg + 90, MAT.spot);
+    ctx.fill(); outline(3, deg + 90);
+    ctx.restore();
+  }
+
+  // the scanner: a magnifying glass looking the lock over
+  function magnifier(x, y, rot, s = 1) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s);
+    const deg = rot * 180 / Math.PI;
+    // handle
+    rrect(88, -20, 190, 40, 18);
+    ctx.fillStyle = lin(0, -20, 0, 20, [[0, .3], [.35, .85], [1, .25]], deg, MAT.accent);
+    ctx.fill(); outline(3.5, deg);
+    rrect(70, -26, 34, 52, 6);
+    ctx.fillStyle = lin(0, -26, 0, 26, CYL, deg + 90, MAT.paper); ctx.fill(); outline(3, deg);
+    // glass + rim
+    ctx.beginPath(); ctx.arc(0, 0, 86, 0, Math.PI * 2);
+    ctx.fillStyle = rad(-30, -30, 5, 90, [[0, .98], [1, .78]], deg + 30, MAT.paper); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, 96, 0, Math.PI * 2); ctx.arc(0, 0, 78, 0, Math.PI * 2, true);
+    ctx.fillStyle = rad(-40, -40, 10, 110, [[0, .95], [1, .25]], deg + 60, MAT.paper); ctx.fill("evenodd"); outline(3.5, 0);
+    // glint
+    ctx.beginPath(); ctx.arc(0, 0, 58, Math.PI * 1.05, Math.PI * 1.45);
+    ctx.lineWidth = 10; ctx.strokeStyle = enc(1, 0, MAT.white); ctx.stroke();
+    ctx.restore();
   }
 
   function padlock(x, y, lift, wobble) {
@@ -325,7 +403,7 @@ void main(){
     const w = 56 + ctx.measureText(text).width, h = 62;
     ctx.beginPath();
     ctx.moveTo(0, 0); ctx.lineTo(26, -h / 2); ctx.lineTo(w, -h / 2); ctx.lineTo(w, h / 2); ctx.lineTo(26, h / 2); ctx.closePath();
-    ctx.fillStyle = lin(0, -h / 2, 0, h / 2, [[0, 1], [1, .78]], 25, MAT.paper);
+    ctx.fillStyle = lin(0, -h / 2, 0, h / 2, [[0, 1], [1, .7]], 25, MAT.accent);
     ctx.fill(); outline(3, 25);
     ctx.beginPath(); ctx.arc(18, 0, 6, 0, Math.PI * 2); ctx.fillStyle = enc(0, 0, MAT.paper); ctx.fill();
     ctx.fillStyle = enc(0, 0, MAT.paper);
@@ -345,8 +423,9 @@ void main(){
       orbit: 170 + rnd() * 170, speed: .35 + rnd() * .5, phase: rnd() * 6.28, tilt: rnd() * .6 - .3,
     };
   });
-  const BUBBLES = Array.from({ length: 11 }, () => ({
-    x: rnd() * 900 - 300, y: rnd() * 900 - 450, r: 5 + rnd() * 20, s: .2 + rnd() * .6, ph: rnd() * 6.28,
+  const BUBBLES = Array.from({ length: 14 }, (_, i) => ({
+    x: rnd() * 1000 - 350, y: rnd() * 900 - 450, r: 5 + rnd() * 22, s: .2 + rnd() * .6, ph: rnd() * 6.28,
+    mat: [MAT.white, MAT.accent, MAT.white, MAT.spot][i % 4],
   }));
   const TAGS = [["/.env", -330, -250, -.12], ["/.git/config", 250, -330, .1], ["/wp-login.php", -390, 200, .08], ["/backup.sql", 250, 270, -.1]];
 
@@ -367,17 +446,23 @@ void main(){
     lure = { x: e.clientX, y: e.clientY, t: performance.now() };
   });
 
+  let pulseAt = -1e9;
+  addEventListener("bot-command", () => (pulseAt = performance.now()));
+
   // ---------- scroll ----------
   // The story only moves through the story scenes. Each section carries the
   // story position (data-p) at its top; interactive sections (.play) hold that
   // position for their whole height, so the film pauses while you play.
-  let target = 0, prog = 0, knots = [];
+  let target = 0, prog = 0, knots = [], colorKnots = [];
   function buildKnots() {
-    knots = [];
+    knots = []; colorKnots = [];
     for (const s of document.querySelectorAll("main > section[data-p]")) {
       const top = s.offsetTop, p = parseFloat(s.dataset.p);
       knots.push([top, p]);
       if (s.classList.contains("play")) knots.push([top + s.offsetHeight * .6, p]);
+      // colour holds through most of a section and blends across the seams
+      const c = [hex(s.dataset.bg || "#d9150f"), hex(s.dataset.accent || "#2b59ff")];
+      colorKnots.push([top - innerHeight * .35, c], [top + Math.max(0, s.offsetHeight - innerHeight * .75), c]);
     }
     const max = document.documentElement.scrollHeight - innerHeight;
     knots = knots.filter(([y]) => y < max);
@@ -390,6 +475,18 @@ void main(){
       if (y <= y1) return y1 > y0 ? lerp(p0, p1, (y - y0) / (y1 - y0)) : p1;
     }
     return 1;
+  }
+  function colorsAt(y) {
+    if (!colorKnots.length) return [hex("#d9150f"), hex("#2b59ff")];
+    if (y <= colorKnots[0][0]) return colorKnots[0][1];
+    for (let i = 1; i < colorKnots.length; i++) {
+      const [y1, c1] = colorKnots[i], [y0, c0] = colorKnots[i - 1];
+      if (y <= y1) {
+        const k = ease(y1 > y0 ? (y - y0) / (y1 - y0) : 1);
+        return [0, 1].map(j => c0[j].map((v, n) => lerp(v, c1[j][n], k)));
+      }
+    }
+    return colorKnots[colorKnots.length - 1][1];
   }
   const bar = document.querySelector(".progress i");
   function readScroll() {
@@ -431,11 +528,12 @@ void main(){
     const pour = span(p, .07, .5);
     const pan = ease(span(p, .56, .74));
     const close = span(p, .72, .8);
-    const night = ease(span(p, .58, .7));
 
-    // background colour (shader + page)
-    const bg = RED.map((c, i) => lerp(c, NIGHT[i], night));
-    document.body.style.setProperty("--bg", `rgb(${bg.map(c => Math.round(c * 255)).join(",")})`);
+    // background + accent colour (shader + page)
+    const [bg, accent] = colorsAt(scrollY);
+    const css = c => `rgb(${c.map(v => Math.round(v * 255)).join(",")})`;
+    document.body.style.setProperty("--bg", css(bg));
+    document.body.style.setProperty("--accent", css(accent));
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = "rgb(0,0,0)";
@@ -460,7 +558,7 @@ void main(){
       ctx.save(); ctx.translate(0, shift);
       for (const b of BUBBLES) {
         const yy = ((b.y - time * 30 * b.s - p * 400) % 1000 + 1000) % 1000 - 500;
-        dot(b.x + Math.sin(time * b.s + b.ph) * 14, yy, b.r * (.6 + .4 * descend));
+        dot(b.x + Math.sin(time * b.s + b.ph) * 14, yy, b.r * (.6 + .4 * descend), b.mat);
       }
       const jarX = 40, jarBase = 380, jarW = 300, jarH = 380;
       const fill = lerp(.18, .78, ease(pour));
@@ -495,6 +593,20 @@ void main(){
       ctx.restore();
     }
 
+    // --- between acts: the honeypot server, scrolling past ---
+    const sy = 820 + shift - 700 * ease(span(pan, .7, 1));
+    if (sy > -1000 && sy < 1100) {
+      const pa = (now - pulseAt) / 1000;
+      const sx = portrait ? 0 : 170;
+      // packets fly in from the left for every command typed
+      if (pa < 1.1) for (let i = 0; i < 6; i++) {
+        const k = clamp(pa * 1.6 - i * .1);
+        if (k <= 0 || k >= 1) continue;
+        dot(lerp(-900, sx - 60, easeOut(k)), sy - 120 + Math.sin(k * Math.PI) * -160 + i * 18, 10 + (i % 3) * 4, i % 2 ? MAT.accent : MAT.spot);
+      }
+      server(sx, sy, time, pa < 1.2 ? pa + .001 : 0);
+    }
+
     // --- act 3 & 4: the lock ---
     if (pan > 0) {
       // for the results, the lock shrinks and lifts out of the way of the cards
@@ -510,10 +622,17 @@ void main(){
         tag(lx + ox, ly + oy + Math.sin(time + oy) * 8, r + sway, text, lx, ly - 20);
       }
       const rattle = lureAge < 1.5 ? Math.sin(lureAge * 32) * .07 * Math.exp(-lureAge * 3) : 0;
+      const spin = ease(span(p, .74, .82));
+      key(lx - 400, ly + 250 + Math.sin(time * .9) * 14, -.55 + Math.sin(time * .7) * .12 + spin * Math.PI * 2, .85);
       padlock(lx, ly, lift + (rattle ? 18 * Math.exp(-lureAge * 4) * (1 - close * .7) : 0), settle + rattle + Math.sin(time * .6) * .015);
+      const look = backOut(span(p, .73, .8));
+      if (look > 0) {
+        const a = time * .45;
+        magnifier(lx + 60 + Math.cos(a) * 300, ly + 20 + Math.sin(a) * 170, .7 + Math.sin(a) * .25, .85 * look);
+      }
       if (close >= 1) for (let i = 0; i < 6; i++) {
         const a = i / 6 * Math.PI * 2 + time * .15;
-        dot(lx + Math.cos(a) * 470, ly + Math.sin(a) * 380, 6 + (i % 3) * 5);
+        dot(lx + Math.cos(a) * 470, ly + Math.sin(a) * 380, 6 + (i % 3) * 5, i % 2 ? MAT.accent : MAT.white);
       }
       ctx.restore();
     }
@@ -532,6 +651,7 @@ void main(){
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, scene);
     gl.uniform2f(uRes, glCanvas.width, glCanvas.height);
     gl.uniform3f(uBg, bg[0], bg[1], bg[2]);
+    gl.uniform3f(uAccent, accent[0], accent[1], accent[2]);
     gl.uniform1f(uPeriod, Math.max(3.2, 4.4 * S) * dpr);
     gl.uniform1f(uTime, time);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

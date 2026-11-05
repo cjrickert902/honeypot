@@ -331,3 +331,66 @@ code { font: .9em var(--mono); background: rgba(0,0,0,.18); padding: .05em .35em
 
 /* intro text in the interactive sections sits over the stage; keep it legible */
 .play .copy > .kicker, .play .copy > h2, .play .copy > p { text-shadow: 0 2px 14px var(--bg), 0 0 4px var(--bg); }
+
+/* ---------- v3: fewer words, more colour ---------- */
+:root { --accent: #2b59ff; --blue: #2b59ff; --pink: #ff5fa2; }
+.big { font: 700 clamp(1.3rem, 2.2vw, 1.8rem)/1.25 var(--serif); max-width: 22rem; }
+.small-note { font: 600 .75rem var(--mono); letter-spacing: .1em; text-transform: uppercase; opacity: .85; }
+h1 { text-shadow: 6px 6px 0 rgba(0,0,0,.25); }
+.scene h2 { text-shadow: 4px 4px 0 rgba(0,0,0,.22); }
+.kicker { display: inline-block; background: var(--paper); color: var(--ink); padding: .3rem .55rem; opacity: 1; box-shadow: 3px 3px 0 var(--ink); transform: rotate(-1.5deg); }
+.play .copy > .kicker { text-shadow: none; }
+
+/* inside the trap */
+.ports button[aria-selected="true"] { background: var(--ink); color: var(--accent); }
+.lane-end { background: var(--accent) !important; color: var(--ink); }
+.creds { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: .4rem; }
+.creds li { display: flex; gap: .5rem; align-items: center; font: .8rem var(--mono); }
+.creds li b { width: 1.8rem; height: 1.8rem; display: grid; place-items: center; border: 2px solid var(--ink); font-size: .9rem; }
+.creds li.no b { background: var(--bg); color: var(--paper); }
+.creds li.ok b { background: var(--spot); }
+.creds li.cmd b { background: var(--ink); color: var(--spot); }
+.creds code { padding: .25rem .5rem; border: 2px solid var(--ink); background: #fff; }
+.creds li.no code:last-child { text-decoration: line-through; opacity: .6; }
+
+/* be the bot: one column, the server keeps the right side */
+#bot .copy { max-width: 44rem; }
+#bot .term { margin-top: 1.25rem; min-height: 22rem; }
+#bot .term-out { max-height: 20rem; }
+#bot .ttp { margin-top: 1rem; padding: .9rem 1rem; }
+#bot .chain { grid-template-columns: repeat(3, 1fr); margin: 0 0 .6rem; }
+#bot .chain li.hit { background: var(--accent); }
+#bot .tech-list { max-height: 9rem; margin: 0; }
+.term-bar i:first-child { background: #ff5f57; }
+.term-bar i:nth-child(2) { background: var(--spot); }
+.term-bar i:nth-child(3) { background: var(--accent); }
+.term-in label, .term-out .cmd { color: var(--accent); }
+
+/* grader */
+#grader .copy { max-width: 58rem; }
+.issue { grid-template-columns: auto 1fr auto; }
+.issue .sev.high { background: var(--pink); color: var(--ink); }
+.issue .sev.medium { background: var(--spot); }
+.issue .sev.low { background: #9fe3c2; }
+.grade-card { background: var(--spot); }
+.grade-letter[data-grade="A"] { text-shadow: 6px 6px 0 var(--accent); }
+.meter i { background: var(--accent); border-right: 2px solid var(--ink); }
+
+/* results: three colours of card */
+.stats article { transform: rotate(-1deg); transition: transform .2s; }
+.stats article:nth-child(2) { transform: rotate(1.2deg) translateY(1rem); }
+.stats article:hover { transform: rotate(0) translateY(-4px); }
+.stats .c1 { background: var(--spot); }
+.stats .c2 { background: var(--blue); color: var(--paper); }
+.stats .c3 { background: var(--pink); }
+
+/* rules as stickers */
+.rule-grid article { text-align: center; }
+.rule-grid article:nth-child(1) { background: var(--spot); transform: rotate(-2deg); }
+.rule-grid article:nth-child(2) { background: var(--blue); color: var(--paper); transform: rotate(1.5deg); }
+.rule-grid article:nth-child(3) { background: #9fe3c2; transform: rotate(-1deg); }
+.rule-grid article:nth-child(4) { background: var(--paper); transform: rotate(2deg); }
+.rule-grid .icon { display: block; font-size: 2.6rem; line-height: 1; margin-bottom: .6rem; }
+.rule-grid h3 { margin-bottom: .3rem; }
+.scene.in .copy > .kicker { transform: rotate(-1.5deg); }
+.copy.wide { width: 100%; }
