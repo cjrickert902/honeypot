@@ -353,32 +353,66 @@ void main(){
   // ---------- input ----------
   let mx = -9999, my = -9999;
   const cursor = document.querySelector(".cursor");
-  let cx = 0, cy = 0;
+  let cx = 0, cy = 0, camX = 0, camY = 0;
   addEventListener("pointermove", e => {
     mx = e.clientX; my = e.clientY;
     if (e.pointerType === "mouse") cursor.classList.add("on");
   });
   document.addEventListener("pointerleave", () => cursor.classList.remove("on"));
-  document.querySelectorAll("a").forEach(a => {
-    a.addEventListener("pointerenter", () => cursor.classList.add("big"));
-    a.addEventListener("pointerleave", () => cursor.classList.remove("big"));
+  document.addEventListener("pointerover", e => cursor.classList.toggle("big", !!e.target.closest("a, button, input")));
+  // Click empty space: a ripple goes out, the bees dive at it, the lock rattles.
+  let lure = null;
+  addEventListener("pointerdown", e => {
+    if (e.target.closest("a, button, input, .panel, label")) return;
+    lure = { x: e.clientX, y: e.clientY, t: performance.now() };
   });
 
   // ---------- scroll ----------
-  let target = 0, prog = 0;
-  function readScroll() {
+  // The story only moves through the story scenes. Each section carries the
+  // story position (data-p) at its top; interactive sections (.play) hold that
+  // position for their whole height, so the film pauses while you play.
+  let target = 0, prog = 0, knots = [];
+  function buildKnots() {
+    knots = [];
+    for (const s of document.querySelectorAll("main > section[data-p]")) {
+      const top = s.offsetTop, p = parseFloat(s.dataset.p);
+      knots.push([top, p]);
+      if (s.classList.contains("play")) knots.push([top + s.offsetHeight * .6, p]);
+    }
     const max = document.documentElement.scrollHeight - innerHeight;
-    target = max > 0 ? clamp(scrollY / max) : 0;
+    knots = knots.filter(([y]) => y < max);
+    knots.push([max, 1]);
+  }
+  function storyAt(y) {
+    if (y <= knots[0][0]) return knots[0][1];
+    for (let i = 1; i < knots.length; i++) {
+      const [y1, p1] = knots[i], [y0, p0] = knots[i - 1];
+      if (y <= y1) return y1 > y0 ? lerp(p0, p1, (y - y0) / (y1 - y0)) : p1;
+    }
+    return 1;
+  }
+  const bar = document.querySelector(".progress i");
+  function readScroll() {
+    target = storyAt(scrollY);
+    const max = document.documentElement.scrollHeight - innerHeight;
+    if (bar) bar.style.transform = `scaleX(${max > 0 ? clamp(scrollY / max) : 0})`;
   }
   addEventListener("scroll", readScroll, { passive: true });
-  if (FIXED !== null) {
-    addEventListener("load", () => {
-      const max = document.documentElement.scrollHeight - innerHeight;
-      scrollTo(0, FIXED * max);
-      readScroll(); prog = target;
-    });
-  }
-  readScroll(); prog = target;
+  addEventListener("resize", () => { buildKnots(); readScroll(); });
+  addEventListener("load", () => {
+    buildKnots();
+    if (FIXED !== null) {
+      // jump to the first scroll position where the story reaches ?p=
+      let y = knots[knots.length - 1][0];
+      for (let i = 1; i < knots.length; i++) {
+        const [y0, p0] = knots[i - 1], [y1, p1] = knots[i];
+        if (FIXED <= p1) { y = p1 > p0 ? lerp(y0, y1, (FIXED - p0) / (p1 - p0)) : y0; break; }
+      }
+      scrollTo(0, y);
+    }
+    readScroll(); prog = target;
+  });
+  buildKnots(); readScroll(); prog = target;
 
   // Sections fade their text in as they arrive.
   const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add("in")), { threshold: .25 });
@@ -406,11 +440,19 @@ void main(){
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = "rgb(0,0,0)";
     ctx.fillRect(0, 0, scene.width, scene.height);
-    ctx.setTransform(dpr * S, 0, 0, dpr * S, CX * dpr, CY * dpr);
+    // the camera leans a little toward the pointer
+    const lean = mx < -999 || reduceMotion ? 0 : 1;
+    camX += ((mx - W / 2) * -.025 * lean - camX) * .06;
+    camY += ((my - H / 2) * -.025 * lean - camY) * .06;
+    const OX = CX + camX, OY = CY + camY;
+    ctx.setTransform(dpr * S, 0, 0, dpr * S, OX * dpr, OY * dpr);
     ctx.lineJoin = "round"; ctx.lineCap = "round";
 
     // pointer in stage units
-    const px = (mx - CX) / S, py = (my - CY) / S;
+    const px = (mx - OX) / S, py = (my - OY) / S;
+    const lureAge = lure ? (now - lure.t) / 1000 : 99;
+    const lx0 = lure ? (lure.x - OX) / S : 0, ly0 = lure ? (lure.y - OY) / S : 0;
+    const pull = lureAge < 2.4 ? Math.sin(Math.min(1, lureAge / 2.4) * Math.PI) : 0;
 
     // --- act 1 & 2: the honeypot ---
     const shift = -pan * 1500;
@@ -440,8 +482,14 @@ void main(){
         let x = lerp(b.sx, ox, easeOut(k)), y = lerp(b.sy, oy, easeOut(k));
         // they scatter from the cursor
         const dx = x - px, dy = y + shift - py, d = Math.hypot(dx, dy);
-        if (d < 190) { x += dx / d * (190 - d) * .9; y += dy / d * (190 - d) * .9; }
-        const heading = k < 1 ? Math.atan2(oy - b.sy, ox - b.sx) : ang + Math.PI / 2;
+        if (d < 190 && pull < .05) { x += dx / d * (190 - d) * .9; y += dy / d * (190 - d) * .9; }
+        let heading = k < 1 ? Math.atan2(oy - b.sy, ox - b.sx) : ang + Math.PI / 2;
+        if (pull > 0) {
+          const tx = lx0 + Math.cos(ang * 2) * 60, ty = ly0 - shift + Math.sin(ang * 2) * 40;
+          const f = pull * (.75 + .25 * Math.sin(b.phase));
+          heading = lerp(heading, Math.atan2(ty - y, tx - x), f);
+          x = lerp(x, tx, f); y = lerp(y, ty, f);
+        }
         bee(x, y, heading + b.tilt, Math.abs(Math.sin(time * 38 + b.phase)));
       }
       ctx.restore();
@@ -461,12 +509,23 @@ void main(){
         const sway = Math.sin(time * .8 + ox) * .05;
         tag(lx + ox, ly + oy + Math.sin(time + oy) * 8, r + sway, text, lx, ly - 20);
       }
-      padlock(lx, ly, lift, settle + Math.sin(time * .6) * .015);
+      const rattle = lureAge < 1.5 ? Math.sin(lureAge * 32) * .07 * Math.exp(-lureAge * 3) : 0;
+      padlock(lx, ly, lift + (rattle ? 18 * Math.exp(-lureAge * 4) * (1 - close * .7) : 0), settle + rattle + Math.sin(time * .6) * .015);
       if (close >= 1) for (let i = 0; i < 6; i++) {
         const a = i / 6 * Math.PI * 2 + time * .15;
         dot(lx + Math.cos(a) * 470, ly + Math.sin(a) * 380, 6 + (i % 3) * 5);
       }
       ctx.restore();
+    }
+
+    // --- the click ripple ---
+    if (lureAge < 1.2) {
+      for (const lag of [0, .18, .36]) {
+        const a = lureAge - lag;
+        if (a <= 0) continue;
+        ctx.beginPath(); ctx.arc(lx0, ly0, 20 + easeOut(a / 1.2) * 260, 0, Math.PI * 2);
+        ctx.lineWidth = 7 * (1 - a / 1.2) + 1; ctx.strokeStyle = enc(1, 0, MAT.white); ctx.stroke();
+      }
     }
 
     // --- engrave it ---
